@@ -16,7 +16,46 @@ The README below describes the design contract, required configuration, and a qu
 
 ## Quick contract (inputs / outputs)
 
-TBD
+### MCP Tools
+
+This server provides the following MCP tools:
+
+#### `daily_stats(mfa_code: str = None) -> dict`
+
+Returns today's Garmin activity statistics.
+
+**Parameters:**
+
+- `mfa_code` (optional): 6-digit MFA code if required for authentication
+
+**Returns:**
+
+```json
+{
+  "steps": 8543,
+  "distance_km": 6.12,
+  "calories": 320,
+  "floors": 12,
+  "date": "2025-09-29"
+}
+```
+
+**Error responses:**
+
+- `missing_credentials`: Need to create `garmin_config.json` with email/password
+- `mfa_required`: MFA code required - call again with `mfa_code` parameter
+- `authentication_failed`: Invalid credentials or MFA code
+
+#### `steps_to_miles(steps: int) -> float`
+
+Simple utility to convert steps to miles (steps ÷ 2000).
+
+### Usage Flow
+
+1. **First time setup:** Copy `garmin_config.json.template` to `garmin_config.json` and add your Garmin credentials
+2. **Call `daily_stats()`** - uses saved tokens if available, otherwise logs in with credentials
+3. **If MFA required:** Call `daily_stats(mfa_code="123456")` with the code from your authenticator
+4. **Subsequent calls:** Uses saved tokens automatically (no credentials/MFA needed)
 
 ## Environment / configuration
 

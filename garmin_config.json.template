@@ -1,0 +1,8 @@
+{
+  "email": "you@example.com",
+  "password": "your-password-here",
+  "token_dir": "~/.garminconnect"
+}
+
+// NOTE: Storing credentials in plaintext is INSECURE. This template is for
+// development/demo only. Never checkin real credentials to source control.
