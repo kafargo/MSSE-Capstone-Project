@@ -1,7 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "msse-capstone-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for Garmin + Weather integration"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,4 +13,43 @@ dependencies = [
     "garth>=0.5.17",
     "mcp[cli]>=1.14.1",
     "requests>=2.32.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["msse_capstone*"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0", 
+    "pytest-mock>=3.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "flake8>=6.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=msse_capstone",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=80",
+    "-v"
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow tests that may take longer to run",
 ]

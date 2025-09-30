@@ -5,7 +5,7 @@ FastMCP base example.
 import logging
 import sys
 from mcp.server.fastmcp import FastMCP
-from clients.garmin_client import init_garmin, get_today_stats, load_config, save_config
+from msse_capstone.clients.garmin_client import init_garmin, get_today_stats, load_config, save_config
 
 # Create an MCP server
 mcp = FastMCP("Demo")

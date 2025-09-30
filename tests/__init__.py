@@ -1,0 +1,1 @@
+"""Test package for MSSE-Capstone-Project MCP server."""

@@ -115,6 +115,8 @@ source .venv/bin/activate
 
 ```bash
 uv add "mcp[cli]"
+# For development (includes testing tools)
+make install-dev
 ```
 
 3. Run the server (optional, see note below)
@@ -149,6 +151,76 @@ Below is a sample mcp config.json for Claude. When using claude, claude will aut
     }
   }
 }
+```
+
+## Testing
+
+This project uses pytest for testing with organized test modules and comprehensive fixtures.
+
+### Quick Testing Commands
+
+```bash
+# Run all tests
+make test
+
+# Run only unit tests
+make test-unit
+
+# Run with coverage report
+make test-coverage
+
+# Run MCP-specific tests
+make test-mcp
+
+# Run Garmin client tests
+make test-garmin
+```
+
+### Test Structure
+
+```
+tests/
+├── __init__.py          # Test package
+├── conftest.py          # Shared fixtures and configuration
+├── test_garmin_client.py # Unit tests for Garmin client
+├── test_mcp_tools.py    # Integration tests for MCP tools
+└── test_utils.py        # Test utilities and helpers
+```
+
+### Test Categories
+
+- **Unit tests** (`@pytest.mark.unit`): Fast tests with mocked dependencies
+- **Integration tests** (`@pytest.mark.integration`): Tests with real component interaction
+- **MCP tests** (`@pytest.mark.mcp`): MCP server and tool functionality
+- **Garmin tests** (`@pytest.mark.garmin`): Garmin client functionality
+- **Slow tests** (`@pytest.mark.slow`): Tests that make real API calls (use sparingly)
+
+### Test Configuration
+
+The project includes:
+
+- `pytest.ini`: Test configuration and markers
+- `conftest.py`: Shared fixtures for mocking Garmin API, config files, and token management
+- Mock fixtures that avoid real API calls during testing
+- Coverage reporting configured for core modules
+
+### Running Specific Tests
+
+```bash
+# Run a specific test file
+pytest tests/test_garmin_client.py
+
+# Run a specific test function
+pytest tests/test_garmin_client.py::TestConfigManagement::test_load_config_existing_file
+
+# Run tests matching a pattern
+pytest tests/ -k "test_mfa"
+
+# Run with verbose output
+pytest tests/ -v
+
+# Run with debugging (no capture)
+pytest tests/ -s
 ```
 
 ## Example API endpoints (suggested)
