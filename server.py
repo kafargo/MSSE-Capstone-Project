@@ -9,6 +9,13 @@ from msse_capstone.clients.garmin_client import (
     init_garmin, 
     get_today_stats, 
     get_last_activity,
+    get_body_battery,
+    get_all_day_stress,
+    get_sleep_data,
+    get_hrv_data,
+    get_training_readiness,
+    get_training_status,
+    get_activities_by_date,
     load_config, 
     save_config
 )
@@ -173,6 +180,306 @@ def last_activity(mfa_code: str = None) -> dict:
 
     logger.info("Successfully returned last activity: %s", data.get("activity_name"))
     return data
+
+
+@mcp.tool()
+def body_battery(start_date: str, end_date: str = None, mfa_code: str = None) -> dict:
+    """Return body battery data for specified date range with MFA support.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format
+        end_date: Optional end date in YYYY-MM-DD format (defaults to start_date)
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with body battery data for the specified date range
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("body_battery called for %s to %s", start_date, end_date or start_date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch body battery data
+    success, data, err = get_body_battery(garmin, start_date, end_date)
+    
+    if not success:
+        logger.error("Failed to fetch body battery data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch body battery data: {err}"
+        }
+
+    logger.info("Successfully returned body battery data")
+    return data
+
+
+@mcp.tool()
+def all_day_stress(date: str, mfa_code: str = None) -> dict:
+    """Return all day stress data for specified date with MFA support.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with stress data for the specified date
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("all_day_stress called for %s", date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch stress data
+    success, data, err = get_all_day_stress(garmin, date)
+    
+    if not success:
+        logger.error("Failed to fetch stress data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch stress data: {err}"
+        }
+
+    logger.info("Successfully returned stress data")
+    return data
+
+
+@mcp.tool()
+def sleep_data(date: str, mfa_code: str = None) -> dict:
+    """Return sleep data for specified date with MFA support.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with sleep data for the specified date
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("sleep_data called for %s", date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch sleep data
+    success, data, err = get_sleep_data(garmin, date)
+    
+    if not success:
+        logger.error("Failed to fetch sleep data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch sleep data: {err}"
+        }
+
+    logger.info("Successfully returned sleep data")
+    return data
+
+
+@mcp.tool()
+def hrv_data(date: str, mfa_code: str = None) -> dict:
+    """Return heart rate variability data for specified date with MFA support.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with HRV data for the specified date
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("hrv_data called for %s", date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch HRV data
+    success, data, err = get_hrv_data(garmin, date)
+    
+    if not success:
+        logger.error("Failed to fetch HRV data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch HRV data: {err}"
+        }
+
+    logger.info("Successfully returned HRV data")
+    return data
+
+
+@mcp.tool()
+def training_readiness(date: str, mfa_code: str = None) -> dict:
+    """Return training readiness data for specified date with MFA support.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with training readiness data for the specified date
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("training_readiness called for %s", date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch training readiness data
+    success, data, err = get_training_readiness(garmin, date)
+    
+    if not success:
+        logger.error("Failed to fetch training readiness data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch training readiness data: {err}"
+        }
+
+    logger.info("Successfully returned training readiness data")
+    return data
+
+
+@mcp.tool()
+def training_status(date: str, mfa_code: str = None) -> dict:
+    """Return training status data for specified date with MFA support.
+
+    Args:
+        date: Date in YYYY-MM-DD format
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with training status data for the specified date
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("training_status called for %s", date)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch training status data
+    success, data, err = get_training_status(garmin, date)
+    
+    if not success:
+        logger.error("Failed to fetch training status data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch training status data: {err}"
+        }
+
+    logger.info("Successfully returned training status data")
+    return data
+
+
+@mcp.tool()
+def activities(start_date: str, end_date: str = None, activity_type: str = None, 
+               sort_order: str = None, mfa_code: str = None) -> dict:
+    """Return activities for specified date range with MFA support.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format
+        end_date: Optional end date in YYYY-MM-DD format (defaults to start_date)
+        activity_type: Optional activity type filter (cycling, running, swimming, multi_sport, fitness_equipment, hiking, walking, other)
+        sort_order: Optional sort order ("asc" for oldest to newest, default is newest to oldest)
+        mfa_code: Optional MFA code if required for authentication
+        
+    Returns:
+        Dict with activities data for the specified date range
+        
+    Setup:
+    1. Create garmin_config.json with email/password
+    2. Call this tool - if MFA required, call again with mfa_code parameter
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("activities called for %s to %s, type=%s", start_date, end_date or start_date, activity_type)
+    
+    # Handle authentication
+    garmin, auth_error = _handle_garmin_auth(mfa_code)
+    if auth_error:
+        return auth_error
+
+    # Fetch activities data
+    success, data, err = get_activities_by_date(garmin, start_date, end_date, activity_type, sort_order)
+    
+    if not success:
+        logger.error("Failed to fetch activities data: %s", err)
+        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+            return {
+                "error": "auth_failed",
+                "message": f"Authentication failed: {err}"
+            }
+        return {
+            "error": "fetch_failed", 
+            "message": f"Failed to fetch activities data: {err}"
+        }
+
+    logger.info("Successfully returned %d activities", data.get("count", 0))
+    return data
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

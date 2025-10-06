@@ -188,3 +188,109 @@ class TestDailyStats:
         
         assert result["error"] == "fetch_failed"
         assert "API Error" in result["message"]
+
+
+class TestNewGarminTools:
+    """Test new Garmin MCP tools."""
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_body_battery')
+    def test_body_battery_success(self, mock_get_data, mock_init, mock_garmin_instance):
+        """Test successful body battery retrieval."""
+        from server import body_battery
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_data.return_value = (
+            True, 
+            {"body_battery": [{"date": "2025-10-06", "charged": 85}], "start_date": "2025-10-06", "end_date": "2025-10-06"}, 
+            None
+        )
+        
+        result = body_battery("2025-10-06")
+        
+        assert "body_battery" in result
+        assert result["start_date"] == "2025-10-06"
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_all_day_stress')
+    def test_all_day_stress_success(self, mock_get_data, mock_init, mock_garmin_instance):
+        """Test successful stress data retrieval."""
+        from server import all_day_stress
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_data.return_value = (
+            True, 
+            {"stress_data": {"overallStressLevel": 25}, "date": "2025-10-06"}, 
+            None
+        )
+        
+        result = all_day_stress("2025-10-06")
+        
+        assert "stress_data" in result
+        assert result["date"] == "2025-10-06"
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_sleep_data')
+    def test_sleep_data_success(self, mock_get_data, mock_init, mock_garmin_instance):
+        """Test successful sleep data retrieval."""
+        from server import sleep_data
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_data.return_value = (
+            True, 
+            {"sleep_data": {"totalSleepTimeSeconds": 28800}, "date": "2025-10-06"}, 
+            None
+        )
+        
+        result = sleep_data("2025-10-06")
+        
+        assert "sleep_data" in result
+        assert result["date"] == "2025-10-06"
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_activities_by_date')
+    def test_activities_success(self, mock_get_data, mock_init, mock_garmin_instance):
+        """Test successful activities retrieval."""
+        from server import activities
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_data.return_value = (
+            True, 
+            {
+                "activities": [{"activityName": "Morning Run"}], 
+                "start_date": "2025-10-06", 
+                "end_date": "2025-10-06",
+                "count": 1
+            }, 
+            None
+        )
+        
+        result = activities("2025-10-06")
+        
+        assert "activities" in result
+        assert result["count"] == 1
+        assert result["start_date"] == "2025-10-06"
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_body_battery')
+    def test_body_battery_auth_failed(self, mock_get_data, mock_init, mock_garmin_instance):
+        """Test authentication failure for body battery."""
+        from server import body_battery
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_data.return_value = (False, None, "Invalid credentials")
+        
+        result = body_battery("2025-10-06")
+        
+        assert result["error"] == "auth_failed"
+        assert "Invalid credentials" in result["message"]
