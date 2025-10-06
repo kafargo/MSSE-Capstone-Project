@@ -181,3 +181,53 @@ def get_today_stats(garmin: Garmin) -> Tuple[bool, Optional[Dict[str, Any]], Opt
     except Exception as e:
         logger.exception("Failed to fetch today stats")
         return False, None, str(e)
+    
+def get_last_activity(garmin: Garmin) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get the most recent activity from Garmin.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+        
+    Example return data:
+        {
+            "activity_id": 12345678901,
+            "activity_name": "Morning Run",
+            "activity_type": "running",
+            "start_time": "2025-10-06T07:30:00",
+            "duration_seconds": 2147,
+            "distance_meters": 5000.0,
+            "calories": 320,
+            "avg_heart_rate": 145
+        }
+    """
+    try:
+        # Get activities (limit to 1 for most recent)
+        activities = garmin.get_activities(0, 1)  # start=0, limit=1
+        
+        if not activities or len(activities) == 0:
+            return False, None, "No activities found"
+            
+        activity = activities[0]
+        
+        # Format the activity data
+        formatted_activity = {
+            "activity_id": activity.get("activityId"),
+            "activity_name": activity.get("activityName"),
+            "activity_type": activity.get("activityType", {}).get("typeKey"),
+            "start_time": activity.get("startTimeLocal"),
+            "duration_seconds": activity.get("duration"),
+            "distance_meters": activity.get("distance"),
+            "calories": activity.get("calories"),
+            "avg_heart_rate": activity.get("averageHR")
+        }
+        
+        logger.info("Successfully fetched last activity: %s", formatted_activity.get("activity_name"))
+        return True, formatted_activity, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch last activity: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg

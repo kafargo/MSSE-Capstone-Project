@@ -134,3 +134,57 @@ class TestDailyStats:
         
         assert result["error"] == "fetch_failed"
         assert "API Error" in result["message"]
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_last_activity')
+    def test_last_activity_success(self, mock_get_activity, mock_init, mock_garmin_instance):
+        """Test successful last activity retrieval."""
+        from server import last_activity
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_activity.return_value = (
+            True, 
+            {"activityName": "Morning Run", "distance": 5.2, "duration": "30:15"}, 
+            None
+        )
+        
+        result = last_activity()
+        
+        assert "activityName" in result
+        assert result["activityName"] == "Morning Run"
+        assert "distance" in result
+        assert "duration" in result
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_last_activity')
+    def test_last_activity_auth_failed(self, mock_get_activity, mock_init, mock_garmin_instance):
+        """Test response when authentication fails for last activity."""
+        from server import last_activity
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_activity.return_value = (False, None, "Invalid credentials")
+        
+        result = last_activity()
+        
+        assert result["error"] == "auth_failed"
+        assert "Invalid credentials" in result["message"]
+
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.init_garmin')
+    @patch('server.get_last_activity')
+    def test_last_activity_fetch_failed(self, mock_get_activity, mock_init, mock_garmin_instance):
+        """Test response when last activity fetch fails."""
+        from server import last_activity
+        
+        mock_init.return_value = mock_garmin_instance
+        mock_get_activity.return_value = (False, None, "API Error")
+        
+        result = last_activity()
+        
+        assert result["error"] == "fetch_failed"
+        assert "API Error" in result["message"]
