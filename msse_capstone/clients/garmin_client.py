@@ -181,3 +181,222 @@ def get_today_stats(garmin: Garmin) -> Tuple[bool, Optional[Dict[str, Any]], Opt
     except Exception as e:
         logger.exception("Failed to fetch today stats")
         return False, None, str(e)
+    
+def get_last_activity(garmin: Garmin) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get the most recent activity from Garmin.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+        
+    Example return data:
+        {
+            "activity_id": 12345678901,
+            "activity_name": "Morning Run",
+            "activity_type": "running",
+            "start_time": "2025-10-06T07:30:00",
+            "duration_seconds": 2147,
+            "distance_meters": 5000.0,
+            "calories": 320,
+            "avg_heart_rate": 145
+        }
+    """
+    try:
+        # Get activities (limit to 1 for most recent)
+        activities = garmin.get_activities(0, 1)  # start=0, limit=1
+        
+        if not activities or len(activities) == 0:
+            return False, None, "No activities found"
+            
+        activity = activities[0]
+        
+        # Format the activity data
+        formatted_activity = {
+            "activity_id": activity.get("activityId"),
+            "activity_name": activity.get("activityName"),
+            "activity_type": activity.get("activityType", {}).get("typeKey"),
+            "start_time": activity.get("startTimeLocal"),
+            "duration_seconds": activity.get("duration"),
+            "distance_meters": activity.get("distance"),
+            "calories": activity.get("calories"),
+            "avg_heart_rate": activity.get("averageHR")
+        }
+        
+        logger.info("Successfully fetched last activity: %s", formatted_activity.get("activity_name"))
+        return True, formatted_activity, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch last activity: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_body_battery(garmin: Garmin, start_date: str, end_date: Optional[str] = None) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get body battery data for specified date range.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        start_date: Start date in YYYY-MM-DD format
+        end_date: Optional end date in YYYY-MM-DD format (defaults to start_date)
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        if end_date is None:
+            end_date = start_date
+            
+        body_battery_data = garmin.get_body_battery(start_date, end_date)
+        
+        logger.info("Successfully fetched body battery data for %s to %s", start_date, end_date)
+        return True, {"body_battery": body_battery_data, "start_date": start_date, "end_date": end_date}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch body battery data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_all_day_stress(garmin: Garmin, date_str: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get all day stress data for specified date.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        stress_data = garmin.get_all_day_stress(date_str)
+        
+        logger.info("Successfully fetched stress data for %s", date_str)
+        return True, {"stress_data": stress_data, "date": date_str}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch stress data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_sleep_data(garmin: Garmin, date_str: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get sleep data for specified date.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        sleep_data = garmin.get_sleep_data(date_str)
+        
+        logger.info("Successfully fetched sleep data for %s", date_str)
+        return True, {"sleep_data": sleep_data, "date": date_str}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch sleep data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_hrv_data(garmin: Garmin, date_str: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get heart rate variability data for specified date.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        hrv_data = garmin.get_hrv_data(date_str)
+        
+        logger.info("Successfully fetched HRV data for %s", date_str)
+        return True, {"hrv_data": hrv_data, "date": date_str}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch HRV data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_training_readiness(garmin: Garmin, date_str: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get training readiness data for specified date.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        readiness_data = garmin.get_training_readiness(date_str)
+        
+        logger.info("Successfully fetched training readiness data for %s", date_str)
+        return True, {"training_readiness": readiness_data, "date": date_str}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch training readiness data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_training_status(garmin: Garmin, date_str: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get training status data for specified date.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        date_str: Date in YYYY-MM-DD format
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        status_data = garmin.get_training_status(date_str)
+        
+        logger.info("Successfully fetched training status data for %s", date_str)
+        return True, {"training_status": status_data, "date": date_str}, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch training status data: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg
+
+
+def get_activities_by_date(garmin: Garmin, start_date: str, end_date: Optional[str] = None, 
+                          activity_type: Optional[str] = None, sort_order: Optional[str] = None) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Get activities for specified date range.
+    
+    Args:
+        garmin: Authenticated Garmin client
+        start_date: Start date in YYYY-MM-DD format
+        end_date: Optional end date in YYYY-MM-DD format (defaults to start_date)
+        activity_type: Optional activity type filter (cycling, running, swimming, etc.)
+        sort_order: Optional sort order ("asc" for oldest to newest)
+        
+    Returns:
+        Tuple of (success: bool, data: dict, error: str)
+    """
+    try:
+        activities = garmin.get_activities_by_date(start_date, end_date, activity_type, sort_order)
+        
+        logger.info("Successfully fetched %d activities for %s to %s", 
+                   len(activities), start_date, end_date or start_date)
+        return True, {
+            "activities": activities, 
+            "start_date": start_date, 
+            "end_date": end_date or start_date,
+            "activity_type": activity_type,
+            "count": len(activities)
+        }, None
+        
+    except Exception as e:
+        error_msg = f"Failed to fetch activities: {e}"
+        logger.exception(error_msg)
+        return False, None, error_msg

@@ -155,3 +155,51 @@ class TestGetTodayStats:
         assert success is False
         assert data is None
         assert "API Error" in error
+
+
+class TestNewGarminClientFunctions:
+    """Test new Garmin client functions."""
+    
+    @pytest.mark.unit
+    def test_get_body_battery_success(self, mock_garmin_instance):
+        """Test successful body battery data retrieval."""
+        from msse_capstone.clients.garmin_client import get_body_battery
+        
+        mock_garmin_instance.get_body_battery.return_value = [{"date": "2025-10-06", "charged": 85}]
+        
+        success, data, error = get_body_battery(mock_garmin_instance, "2025-10-06")
+        
+        assert success is True
+        assert data["body_battery"] == [{"date": "2025-10-06", "charged": 85}]
+        assert data["start_date"] == "2025-10-06"
+        assert error is None
+
+    @pytest.mark.unit
+    def test_get_activities_by_date_success(self, mock_garmin_instance):
+        """Test successful activities retrieval."""
+        from msse_capstone.clients.garmin_client import get_activities_by_date
+        
+        mock_garmin_instance.get_activities_by_date.return_value = [
+            {"activityName": "Morning Run", "activityId": 123}
+        ]
+        
+        success, data, error = get_activities_by_date(mock_garmin_instance, "2025-10-06")
+        
+        assert success is True
+        assert len(data["activities"]) == 1
+        assert data["activities"][0]["activityName"] == "Morning Run"
+        assert data["count"] == 1
+        assert error is None
+
+    @pytest.mark.unit
+    def test_get_sleep_data_error(self, mock_garmin_instance):
+        """Test sleep data API error handling."""
+        from msse_capstone.clients.garmin_client import get_sleep_data
+        
+        mock_garmin_instance.get_sleep_data.side_effect = Exception("Sleep API Error")
+        
+        success, data, error = get_sleep_data(mock_garmin_instance, "2025-10-06")
+        
+        assert success is False
+        assert data is None
+        assert "Sleep API Error" in error
