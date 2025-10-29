@@ -1,0 +1,20 @@
+{
+  "goals": [
+    "burn_calories",
+    "cardiovascular_fitness"
+  ],
+  "workout_frequency": 6,
+  "preferred_days": [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday"
+  ],
+  "session_duration_minutes": 60,
+  "session_notes": "Duration flexible between 45-60 minutes, focus on distance rather than time",
+  "intensity_level": "moderate_to_vigorous",
+  "restrictions": [],
+  "workout_type_preference": "distance_based"
+}

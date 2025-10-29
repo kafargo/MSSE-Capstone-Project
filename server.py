@@ -19,6 +19,12 @@ from msse_capstone.clients.garmin_client import (
     load_config, 
     save_config
 )
+from msse_capstone.clients.preferences_client import (
+    load_workout_preferences,
+    save_workout_preferences,
+    load_available_equipment,
+    save_available_equipment,
+)
 
 # Create an MCP server
 mcp = FastMCP("Demo")
@@ -479,6 +485,164 @@ def activities(start_date: str, end_date: str = None, activity_type: str = None,
 
     logger.info("Successfully returned %d activities", data.get("count", 0))
     return data
+
+
+@mcp.tool()
+def workout_preferences(preferences_data: dict = None) -> dict:
+    """Get or set workout preferences.
+    
+    This tool manages user workout preferences stored in a local file. If preferences
+    don't exist, it prompts the user to provide them. Once set, preferences are 
+    persisted and returned on subsequent calls.
+    
+    Args:
+        preferences_data: Optional dict containing workout preferences to save.
+                         If None, attempts to load existing preferences.
+                         
+    Returns:
+        Dict with preferences data or prompt for user to provide preferences
+        
+    Example preferences_data structure:
+    {
+        "goals": ["strength", "endurance", "weight_loss"],
+        "workout_frequency": 4,
+        "preferred_days": ["monday", "wednesday", "friday", "sunday"],
+        "session_duration_minutes": 60,
+        "intensity_level": "moderate",
+        "restrictions": ["no_jumping", "low_impact"]
+    }
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("workout_preferences called with data=%s", "provided" if preferences_data else "None")
+    
+    # If preferences_data provided, save it
+    if preferences_data:
+        success, err = save_workout_preferences(preferences_data)
+        if not success:
+            logger.error("Failed to save workout preferences: %s", err)
+            return {
+                "error": "save_failed",
+                "message": f"Failed to save workout preferences: {err}"
+            }
+        logger.info("Successfully saved workout preferences")
+        return {
+            "status": "saved",
+            "message": "Workout preferences saved successfully",
+            "data": preferences_data
+        }
+    
+    # Try to load existing preferences
+    success, data, err = load_workout_preferences()
+    
+    if not success:
+        if err == "not_found":
+            logger.info("No workout preferences found, prompting user")
+            return {
+                "status": "not_found",
+                "message": "No workout preferences found. Please provide your preferences.",
+                "prompt": "Please provide your workout preferences including goals, frequency, preferred days, session duration, intensity level, and any restrictions.",
+                "example": {
+                    "goals": ["strength", "endurance", "weight_loss"],
+                    "workout_frequency": 4,
+                    "preferred_days": ["monday", "wednesday", "friday", "sunday"],
+                    "session_duration_minutes": 60,
+                    "intensity_level": "moderate",
+                    "restrictions": ["no_jumping", "low_impact"]
+                }
+            }
+        else:
+            logger.error("Failed to load workout preferences: %s", err)
+            return {
+                "error": "load_failed",
+                "message": f"Failed to load workout preferences: {err}"
+            }
+    
+    logger.info("Successfully loaded workout preferences")
+    return {
+        "status": "found",
+        "data": data
+    }
+
+
+@mcp.tool()
+def available_equipment(equipment_data: dict = None) -> dict:
+    """Get or set available workout equipment.
+    
+    This tool manages user's available workout equipment stored in a local file. 
+    If equipment data doesn't exist, it prompts the user to provide it. Once set, 
+    equipment data is persisted and returned on subsequent calls.
+    
+    Args:
+        equipment_data: Optional dict containing available equipment to save.
+                       If None, attempts to load existing equipment data.
+                       
+    Returns:
+        Dict with equipment data or prompt for user to provide equipment info
+        
+    Example equipment_data structure:
+    {
+        "cardio": ["treadmill", "stationary_bike", "rowing_machine"],
+        "strength": ["dumbbells", "barbell", "bench", "pull_up_bar"],
+        "weights_available": {
+            "dumbbells": "5-50 lbs",
+            "barbell": "45 lbs with plates up to 315 lbs"
+        },
+        "accessories": ["yoga_mat", "resistance_bands", "foam_roller"],
+        "location": "home_gym"
+    }
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("available_equipment called with data=%s", "provided" if equipment_data else "None")
+    
+    # If equipment_data provided, save it
+    if equipment_data:
+        success, err = save_available_equipment(equipment_data)
+        if not success:
+            logger.error("Failed to save available equipment: %s", err)
+            return {
+                "error": "save_failed",
+                "message": f"Failed to save available equipment: {err}"
+            }
+        logger.info("Successfully saved available equipment")
+        return {
+            "status": "saved",
+            "message": "Available equipment saved successfully",
+            "data": equipment_data
+        }
+    
+    # Try to load existing equipment data
+    success, data, err = load_available_equipment()
+    
+    if not success:
+        if err == "not_found":
+            logger.info("No equipment data found, prompting user")
+            return {
+                "status": "not_found",
+                "message": "No equipment data found. Please provide your available equipment.",
+                "prompt": "Please provide details about your available workout equipment including cardio machines, strength equipment, weights, accessories, and location.",
+                "example": {
+                    "cardio": ["treadmill", "stationary_bike", "rowing_machine"],
+                    "strength": ["dumbbells", "barbell", "bench", "pull_up_bar"],
+                    "weights_available": {
+                        "dumbbells": "5-50 lbs",
+                        "barbell": "45 lbs with plates up to 315 lbs"
+                    },
+                    "accessories": ["yoga_mat", "resistance_bands", "foam_roller"],
+                    "location": "home_gym"
+                }
+            }
+        else:
+            logger.error("Failed to load available equipment: %s", err)
+            return {
+                "error": "load_failed",
+                "message": f"Failed to load available equipment: {err}"
+            }
+    
+    logger.info("Successfully loaded available equipment")
+    return {
+        "status": "found",
+        "data": data
+    }
 
 
 if __name__ == "__main__":

@@ -294,3 +294,186 @@ class TestNewGarminTools:
         
         assert result["error"] == "auth_failed"
         assert "Invalid credentials" in result["message"]
+
+
+class TestWorkoutPreferences:
+    """Tests for the workout_preferences MCP tool."""
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_workout_preferences')
+    def test_workout_preferences_not_found(self, mock_load):
+        """Test when no preferences exist - should prompt user."""
+        from server import workout_preferences
+        
+        mock_load.return_value = (False, None, "not_found")
+        
+        result = workout_preferences()
+        
+        assert result["status"] == "not_found"
+        assert "Please provide your preferences" in result["message"]
+        assert "prompt" in result
+        assert "example" in result
+        mock_load.assert_called_once()
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_workout_preferences')
+    def test_workout_preferences_found(self, mock_load):
+        """Test successfully loading existing preferences."""
+        from server import workout_preferences
+        
+        sample_prefs = {
+            "goals": ["strength", "endurance"],
+            "workout_frequency": 4,
+            "preferred_days": ["monday", "wednesday"],
+            "session_duration_minutes": 60,
+            "intensity_level": "moderate"
+        }
+        mock_load.return_value = (True, sample_prefs, None)
+        
+        result = workout_preferences()
+        
+        assert result["status"] == "found"
+        assert result["data"] == sample_prefs
+        mock_load.assert_called_once()
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.save_workout_preferences')
+    def test_workout_preferences_save_success(self, mock_save):
+        """Test successfully saving preferences."""
+        from server import workout_preferences
+        
+        sample_prefs = {
+            "goals": ["strength"],
+            "workout_frequency": 3
+        }
+        mock_save.return_value = (True, None)
+        
+        result = workout_preferences(preferences_data=sample_prefs)
+        
+        assert result["status"] == "saved"
+        assert result["data"] == sample_prefs
+        mock_save.assert_called_once_with(sample_prefs)
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.save_workout_preferences')
+    def test_workout_preferences_save_failed(self, mock_save):
+        """Test failed save operation."""
+        from server import workout_preferences
+        
+        sample_prefs = {"goals": ["strength"]}
+        mock_save.return_value = (False, "IO error")
+        
+        result = workout_preferences(preferences_data=sample_prefs)
+        
+        assert result["error"] == "save_failed"
+        assert "IO error" in result["message"]
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_workout_preferences')
+    def test_workout_preferences_load_failed(self, mock_load):
+        """Test failed load operation (not file not found)."""
+        from server import workout_preferences
+        
+        mock_load.return_value = (False, None, "Invalid JSON")
+        
+        result = workout_preferences()
+        
+        assert result["error"] == "load_failed"
+        assert "Invalid JSON" in result["message"]
+
+
+class TestAvailableEquipment:
+    """Tests for the available_equipment MCP tool."""
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_available_equipment')
+    def test_available_equipment_not_found(self, mock_load):
+        """Test when no equipment data exists - should prompt user."""
+        from server import available_equipment
+        
+        mock_load.return_value = (False, None, "not_found")
+        
+        result = available_equipment()
+        
+        assert result["status"] == "not_found"
+        assert "Please provide your available equipment" in result["message"]
+        assert "prompt" in result
+        assert "example" in result
+        mock_load.assert_called_once()
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_available_equipment')
+    def test_available_equipment_found(self, mock_load):
+        """Test successfully loading existing equipment data."""
+        from server import available_equipment
+        
+        sample_equipment = {
+            "cardio": ["treadmill", "stationary_bike"],
+            "strength": ["dumbbells", "barbell"],
+            "weights_available": {
+                "dumbbells": "5-50 lbs"
+            },
+            "location": "home_gym"
+        }
+        mock_load.return_value = (True, sample_equipment, None)
+        
+        result = available_equipment()
+        
+        assert result["status"] == "found"
+        assert result["data"] == sample_equipment
+        mock_load.assert_called_once()
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.save_available_equipment')
+    def test_available_equipment_save_success(self, mock_save):
+        """Test successfully saving equipment data."""
+        from server import available_equipment
+        
+        sample_equipment = {
+            "cardio": ["treadmill"],
+            "strength": ["dumbbells"]
+        }
+        mock_save.return_value = (True, None)
+        
+        result = available_equipment(equipment_data=sample_equipment)
+        
+        assert result["status"] == "saved"
+        assert result["data"] == sample_equipment
+        mock_save.assert_called_once_with(sample_equipment)
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.save_available_equipment')
+    def test_available_equipment_save_failed(self, mock_save):
+        """Test failed save operation."""
+        from server import available_equipment
+        
+        sample_equipment = {"cardio": ["treadmill"]}
+        mock_save.return_value = (False, "IO error")
+        
+        result = available_equipment(equipment_data=sample_equipment)
+        
+        assert result["error"] == "save_failed"
+        assert "IO error" in result["message"]
+    
+    @pytest.mark.mcp
+    @pytest.mark.unit
+    @patch('server.load_available_equipment')
+    def test_available_equipment_load_failed(self, mock_load):
+        """Test failed load operation (not file not found)."""
+        from server import available_equipment
+        
+        mock_load.return_value = (False, None, "Invalid JSON")
+        
+        result = available_equipment()
+        
+        assert result["error"] == "load_failed"
+        assert "Invalid JSON" in result["message"]
