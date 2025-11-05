@@ -13,7 +13,7 @@
     "saturday"
   ],
   "session_duration_minutes": 60,
-  "session_notes": "Duration flexible between 45-60 minutes, focus on distance rather than time",
+  "session_notes": "Duration flexible between 45-60 minutes, focus on distance rather than time. Likes to switch up running and cycling, but tries to avoid running two consecutive days in a row. Does not want to workout outside if temperature is less than 30 degrees.",
   "intensity_level": "moderate_to_vigorous",
   "restrictions": [],
   "workout_type_preference": "distance_based"
