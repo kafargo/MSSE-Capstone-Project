@@ -1,0 +1,11 @@
+{
+  "cardio": [
+    "indoor_bike",
+    "outdoor_bike"
+  ],
+  "strength": [],
+  "weights_available": {},
+  "accessories": [],
+  "location": "home",
+  "notes": "Outdoor bike available for riding when weather permits (temperature above 30 degrees)"
+}
