@@ -1,143 +1,76 @@
-# MSSE-Capstone-Project — MCP Starter for Garmin + Weather
+# MSSE-Capstone-Project — MCP Server for Garmin Data
 
-This repository is a starter Model Context Protocol (MCP) server for an MSSE capstone project. It provides a focused integration point for Garmin activity data and external weather information so users can better plan their workouts.
+This repository provides a Model Context Protocol (MCP) server for an MSSE capstone project. It integrates with Garmin Connect to provide activity and health data through MCP tools, enabling AI agents to access workout information, user preferences, and equipment availability.
 
 ![High Level Architecture](img/High.Level.Architecture.png)
 
 ## Purpose
 
-This project is intended as a minimal, well-documented starting point for building an MCP-compatible service that:
+This MCP server provides:
 
-- Collects activity and health data from Garmin (via Python Wrapper API).
-- Enriches activity data with weather and forecast information from a weather API.
-- Provides an interface (MCP endpoints / context provider) so agents or tools can query user activity + environmental context to make workout recommendations.
+- **Garmin data integration**: Activity stats, body battery, sleep, HRV, stress, training readiness, and activity history
+- **User preferences management**: Workout preferences and available equipment stored locally
+- **MCP-compatible interface**: Tools that AI agents can use to query and store user data
+- **Authentication handling**: Robust MFA support for Garmin Connect authentication
 
-The README below describes the design contract, required configuration, and a quick-start development flow
+## Available MCP Tools
 
-## Quick contract (inputs / outputs)
+### Garmin Data Tools
 
-### MCP Tools
+- **`daily_stats(mfa_code: str = None)`** - Today's activity statistics (steps, distance, calories, floors)
+- **`last_activity(mfa_code: str = None)`** - Most recent workout/activity details
+- **`body_battery(start_date: str, end_date: str = None, mfa_code: str = None)`** - Body battery data for date range
+- **`all_day_stress(start_date: str, end_date: str = None, mfa_code: str = None)`** - Stress level data
+- **`sleep_data(start_date: str, end_date: str = None, mfa_code: str = None)`** - Sleep analysis data
+- **`hrv_data(start_date: str, end_date: str = None, mfa_code: str = None)`** - Heart rate variability metrics
+- **`training_readiness(mfa_code: str = None)`** - Current training readiness score
+- **`training_status(mfa_code: str = None)`** - Training status and load information
+- **`activities(start_date: str, end_date: str = None, activity_type: str = None, sort_order: str = None, mfa_code: str = None)`** - Activity history with filtering
 
-This server provides the following MCP tools:
+### User Preferences Tools
 
-#### `daily_stats(mfa_code: str = None) -> dict`
+- **`workout_preferences(preferences_data: dict = None)`** - Get or set workout preferences (goals, frequency, intensity, restrictions)
+- **`available_equipment(equipment_data: dict = None)`** - Get or set available workout equipment
 
-Returns today's Garmin activity statistics.
+### Utility Tools
 
-**Parameters:**
+- **`steps_to_miles(steps: int)`** - Convert steps to miles (steps ÷ 2000)
 
-- `mfa_code` (optional): 6-digit MFA code if required for authentication
+### Authentication Flow
 
-**Returns:**
+All Garmin tools support MFA authentication:
+
+1. **First call**: Uses saved tokens from `~/.garminconnect` if available, otherwise logs in with credentials from `garmin_config.json`
+2. **If MFA required**: Tool returns `mfa_required` error with instructions
+3. **Provide MFA code**: Call tool again with `mfa_code="123456"` parameter
+4. **Subsequent calls**: Uses saved tokens automatically
+
+## Requirements
+
+- **Python 3.13+**
+- **uv** (recommended) or pip for dependency management
+- **Garmin Connect account** with credentials
+
+## Configuration
+
+### Garmin Setup
+
+1. Copy the template: `cp garmin_config.json.template garmin_config.json`
+2. Edit `garmin_config.json` with your Garmin credentials:
+   ```json
+   {
+     "email": "your.email@example.com",
+     "password": "your_password",
+     "token_dir": "~/.garminconnect"
+   }
+   ```
+3. Tokens are automatically saved to `~/.garminconnect` after first successful authentication
+
+### Claude Desktop Integration
+
+Add to your Claude Desktop config file (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
-{
-  "steps": 8543,
-  "distance_km": 6.12,
-  "calories": 320,
-  "floors": 12,
-  "date": "2025-09-29"
-}
-```
-
-**Error responses:**
-
-- `missing_credentials`: Need to create `garmin_config.json` with email/password
-- `mfa_required`: MFA code required - call again with `mfa_code` parameter
-- `authentication_failed`: Invalid credentials or MFA code
-
-#### `steps_to_miles(steps: int) -> float`
-
-Simple utility to convert steps to miles (steps ÷ 2000).
-
-### Usage Flow
-
-1. **First time setup:** Copy `garmin_config.json.template` to `garmin_config.json` and add your Garmin credentials
-2. **Call `daily_stats()`** - uses saved tokens if available, otherwise logs in with credentials
-3. **If MFA required:** Call `daily_stats(mfa_code="123456")` with the code from your authenticator
-4. **Subsequent calls:** Uses saved tokens automatically (no credentials/MFA needed)
-
-## Environment / configuration
-
-This project relies on three small pieces of developer tooling:
-
-- uv  
-  A lightweight task/venv helper used here to create and run the dev environment. Typical commands used in this repo:
-
-  - Create venv: `uv venv`
-  - Add deps: `uv add "mcp[cli]"`
-  - Run the server: `uv run server.py`
-    uv simply launches the project and its Python interpreter (you'll see a parent `uv` process and a child `python` process).
-
-- Python virtual environments  
-  Use an isolated venv for all installs and runs. Recommended commands (macOS / zsh):
-
-  ```bash
-  python3.13 -m venv .venv
-  source .venv/bin/activate
-  ```
-
-  Install packages inside the venv (editable/local install preferred): `pip install -e .` or `pip install "mcp[cli]"`.
-
-- Model Context Protocol (MCP) Python SDK  
-  This repo uses the MCP SDK for server primitives and tooling. Install via pip (inside the venv):
-  ```bash
-  pip install "mcp[cli]"
-  ```
-  SDK docs and examples: https://github.com/modelcontextprotocol/python-sdk — consult the SDK for server patterns, endpoint shapes, and testing helpers.
-
-Notes
-
-- Keep the venv active for development commands and when running the server.
-- Claude Desktop can auto-launch the server using the `uv` command in its config; restart Claude after code changes to ensure it re-registers endpoints.
-- TODO: add any required env vars or API credentials once external clients (Garmin / weather) are implemented.
-
-## Authentication flows
-
-TBD
-
-## Project structure
-
-TBD
-
-## Getting started (developer flow)
-
-This project uses uv for dependency management
-
-1. Create & activate a virtual environment (macOS / zsh)
-
-```bash
-uv venv
-source .venv/bin/activate
-```
-
-2. Install dependencies
-
-```bash
-uv add "mcp[cli]"
-# For development (includes testing tools)
-make install-dev
-```
-
-3. Run the server (optional, see note below)
-
-```bash
-uv run server.py
-# stop: Ctrl+C
-```
-
-4. Quick checks & diagnostics
-
-```bash
-# list server processes
-pgrep -af server.py
-```
-
-It's expected that two PIDs are running, one for uv (the parent) and one for the server.py.
-
-Below is a sample mcp config.json for Claude. When using claude, claude will automatically start up the server, so there is no need to manually start the server each time. For troubleshooting, its also important to restart Claude after every change for this reason.
-
-```
 {
   "mcpServers": {
     "MSSE-Capstone-Project": {
@@ -146,18 +79,89 @@ Below is a sample mcp config.json for Claude. When using claude, claude will aut
         "--directory",
         "/Users/[username]/MSSE-Capstone-Project",
         "run",
-        "/Users/[username]/MSSE-Capstone-Project/server.py"
+        "server.py"
       ]
     }
   }
 }
 ```
 
+**Note:** Restart Claude Desktop after any code changes to reload the server.
+
+## Getting Started
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/kafargo/MSSE-Capstone-Project.git
+   cd MSSE-Capstone-Project
+   ```
+
+2. **Set up virtual environment**
+
+   Using uv (recommended):
+
+   ```bash
+   uv venv
+   source .venv/bin/activate
+   ```
+
+   Or using standard Python:
+
+   ```bash
+   python3.13 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+
+   Using uv:
+
+   ```bash
+   uv sync
+   ```
+
+   Or using pip:
+
+   ```bash
+   pip install -e .
+   # For development dependencies:
+   pip install -e ".[dev]"
+   ```
+
+4. **Configure Garmin credentials**
+   ```bash
+   cp garmin_config.json.template garmin_config.json
+   # Edit garmin_config.json with your credentials
+   ```
+
+### Running the Server
+
+**For development/testing:**
+
+```bash
+uv run server.py
+```
+
+**With Claude Desktop:** The server starts automatically when Claude launches (no manual start needed)
+
+### Verify Installation
+
+```bash
+# Run tests
+make test
+
+# Check server processes (when running manually)
+pgrep -af server.py
+```
+
 ## Testing
 
-This project uses pytest for testing with organized test modules and comprehensive fixtures.
+This project uses pytest with comprehensive test coverage.
 
-### Quick Testing Commands
+### Quick Commands
 
 ```bash
 # Run all tests
@@ -180,29 +184,20 @@ make test-garmin
 
 ```
 tests/
-├── __init__.py          # Test package
-├── conftest.py          # Shared fixtures and configuration
-├── test_garmin_client.py # Unit tests for Garmin client
-├── test_mcp_tools.py    # Integration tests for MCP tools
-└── test_utils.py        # Test utilities and helpers
+├── conftest.py                  # Shared fixtures and configuration
+├── test_garmin_client.py        # Unit tests for Garmin client
+├── test_preferences_client.py   # Unit tests for preferences client
+├── test_mcp_tools.py            # Integration tests for MCP tools
+└── test_utils.py                # Test utilities and helpers
 ```
 
-### Test Categories
+### Test Categories (Markers)
 
-- **Unit tests** (`@pytest.mark.unit`): Fast tests with mocked dependencies
-- **Integration tests** (`@pytest.mark.integration`): Tests with real component interaction
-- **MCP tests** (`@pytest.mark.mcp`): MCP server and tool functionality
-- **Garmin tests** (`@pytest.mark.garmin`): Garmin client functionality
-- **Slow tests** (`@pytest.mark.slow`): Tests that make real API calls (use sparingly)
-
-### Test Configuration
-
-The project includes:
-
-- `pytest.ini`: Test configuration and markers
-- `conftest.py`: Shared fixtures for mocking Garmin API, config files, and token management
-- Mock fixtures that avoid real API calls during testing
-- Coverage reporting configured for core modules
+- `@pytest.mark.unit` - Fast tests with mocked dependencies
+- `@pytest.mark.integration` - Tests with real component interaction
+- `@pytest.mark.mcp` - MCP server and tool functionality
+- `@pytest.mark.garmin` - Garmin client functionality
+- `@pytest.mark.slow` - Tests that make real API calls (use sparingly)
 
 ### Running Specific Tests
 
@@ -210,22 +205,34 @@ The project includes:
 # Run a specific test file
 pytest tests/test_garmin_client.py
 
-# Run a specific test function
+# Run a specific test class or function
 pytest tests/test_garmin_client.py::TestConfigManagement::test_load_config_existing_file
 
 # Run tests matching a pattern
-pytest tests/ -k "test_mfa"
+pytest tests/ -k "mfa"
 
-# Run with verbose output
-pytest tests/ -v
-
-# Run with debugging (no capture)
-pytest tests/ -s
+# Run tests with specific markers
+pytest tests/ -m unit
 ```
 
-## Example API endpoints (suggested)
+## Project Structure
 
-TBD
+```
+MSSE-Capstone-Project/
+├── server.py                    # MCP server with tool definitions
+├── msse_capstone/
+│   ├── __init__.py
+│   └── clients/
+│       ├── garmin_client.py     # Garmin Connect integration
+│       └── preferences_client.py # User preferences management
+├── tests/                       # Test suite
+├── garmin_config.json.template  # Template for Garmin credentials
+├── workout_preferences.json     # Stored workout preferences
+├── available_equipment.json     # Stored equipment data
+├── pyproject.toml              # Project dependencies and metadata
+├── pytest.ini                  # Test configuration
+└── Makefile                    # Common development tasks
+```
 
 ## Contributing
 
