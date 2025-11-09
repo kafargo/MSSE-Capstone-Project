@@ -264,7 +264,7 @@ def all_day_stress(date: str, mfa_code: Optional[str] = None) -> dict:
     1. Create garmin_config.json with email/password
     2. Call this tool - if MFA required, call again with mfa_code parameter
     """
-    return _execute_garmin_tool("all_day_stress", get_all_day_stress, mfa_code, date=date)
+    return _execute_garmin_tool("all_day_stress", get_all_day_stress, mfa_code, date_str=date)
 
 
 @mcp.tool()
@@ -282,7 +282,7 @@ def sleep_data(date: str, mfa_code: Optional[str] = None) -> dict:
     1. Create garmin_config.json with email/password
     2. Call this tool - if MFA required, call again with mfa_code parameter
     """
-    return _execute_garmin_tool("sleep_data", get_sleep_data, mfa_code, date=date)
+    return _execute_garmin_tool("sleep_data", get_sleep_data, mfa_code, date_str=date)
 
 
 @mcp.tool()
@@ -300,7 +300,7 @@ def hrv_data(date: str, mfa_code: Optional[str] = None) -> dict:
     1. Create garmin_config.json with email/password
     2. Call this tool - if MFA required, call again with mfa_code parameter
     """
-    return _execute_garmin_tool("hrv_data", get_hrv_data, mfa_code, date=date)
+    return _execute_garmin_tool("hrv_data", get_hrv_data, mfa_code, date_str=date)
 
 
 @mcp.tool()
@@ -318,7 +318,7 @@ def training_readiness(date: str, mfa_code: Optional[str] = None) -> dict:
     1. Create garmin_config.json with email/password
     2. Call this tool - if MFA required, call again with mfa_code parameter
     """
-    return _execute_garmin_tool("training_readiness", get_training_readiness, mfa_code, date=date)
+    return _execute_garmin_tool("training_readiness", get_training_readiness, mfa_code, date_str=date)
 
 
 @mcp.tool()
@@ -336,7 +336,7 @@ def training_status(date: str, mfa_code: Optional[str] = None) -> dict:
     1. Create garmin_config.json with email/password
     2. Call this tool - if MFA required, call again with mfa_code parameter
     """
-    return _execute_garmin_tool("training_status", get_training_status, mfa_code, date=date)
+    return _execute_garmin_tool("training_status", get_training_status, mfa_code, date_str=date)
 
 
 @mcp.tool()
