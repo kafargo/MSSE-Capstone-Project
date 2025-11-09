@@ -1,9 +1,12 @@
-"""
-FastMCP base example.
+"""MCP Server for Garmin Data Integration.
 
+This module provides MCP tools for accessing Garmin Connect data,
+user preferences, and workout equipment information.
 """
 import logging
 import sys
+from typing import Optional
+
 from mcp.server.fastmcp import FastMCP
 from msse_capstone.clients.garmin_client import (
     init_garmin, 
@@ -26,11 +29,40 @@ from msse_capstone.clients.preferences_client import (
     save_available_equipment,
 )
 
+# Constants
+AUTH_ERROR_KEYWORDS = ['credential', 'auth', 'login', 'unauthorized', 'forbidden']
+STEPS_TO_MILES_RATIO = 2000.0
+
+# Error messages
+ERROR_AUTH_FAILED = "auth_failed"
+ERROR_FETCH_FAILED = "fetch_failed"
+ERROR_SAVE_FAILED = "save_failed"
+ERROR_LOAD_FAILED = "load_failed"
+
+# Status messages
+STATUS_NOT_FOUND = "not_found"
+STATUS_SAVED = "saved"
+STATUS_FOUND = "found"
+
 # Create an MCP server
-mcp = FastMCP("Demo")
+mcp = FastMCP("MSSE-Capstone-Garmin")
 
 
-def _handle_garmin_auth(mfa_code: str = None) -> tuple[object, dict]:
+def _is_auth_error(error_message: Optional[str]) -> bool:
+    """Check if an error message indicates an authentication failure.
+    
+    Args:
+        error_message: Error message to check
+        
+    Returns:
+        True if the error is authentication-related, False otherwise
+    """
+    if not error_message:
+        return False
+    return any(keyword in error_message.lower() for keyword in AUTH_ERROR_KEYWORDS)
+
+
+def _handle_garmin_auth(mfa_code: Optional[str] = None) -> tuple[object, Optional[dict]]:
     """Handle Garmin authentication with MFA support.
     
     Args:
@@ -77,23 +109,22 @@ def _handle_garmin_auth(mfa_code: str = None) -> tuple[object, dict]:
             "message": str(e)
         }
 
-# Add a steps to miles tool
 @mcp.tool()
 def steps_to_miles(steps: int) -> float:
-    """
-    Convert steps to miles
+    """Convert steps to miles.
 
     Args:
-        steps (int): Number of steps
+        steps: Number of steps
+        
     Returns:
-        float: Number of miles
+        Number of miles (steps divided by 2000)
     """
-    return steps / 2000.0
+    return steps / STEPS_TO_MILES_RATIO
 
 
 # Minimal MCP tool that returns today's Garmin stats
 @mcp.tool()
-def daily_stats(mfa_code: str = None) -> dict:
+def daily_stats(mfa_code: Optional[str] = None) -> dict:
     """Return today's Garmin stats with MFA support.
 
     Args:
@@ -124,14 +155,13 @@ def daily_stats(mfa_code: str = None) -> dict:
     success, data, err = get_today_stats(garmin)
     if not success:
         logger.error("Failed to fetch daily stats: %s", err)
-        # Check if this is an authentication error
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed",
+            "error": ERROR_FETCH_FAILED,
             "message": f"Failed to fetch daily stats: {err}"
         }
 
@@ -140,7 +170,7 @@ def daily_stats(mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def last_activity(mfa_code: str = None) -> dict:
+def last_activity(mfa_code: Optional[str] = None) -> dict:
     """Return the most recent Garmin activity with MFA support.
 
     Args:
@@ -173,14 +203,13 @@ def last_activity(mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch last activity: %s", err)
-        # Check if this is an authentication error
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch last activity: {err}"
         }
 
@@ -189,7 +218,7 @@ def last_activity(mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def body_battery(start_date: str, end_date: str = None, mfa_code: str = None) -> dict:
+def body_battery(start_date: str, end_date: Optional[str] = None, mfa_code: Optional[str] = None) -> dict:
     """Return body battery data for specified date range with MFA support.
 
     Args:
@@ -217,13 +246,13 @@ def body_battery(start_date: str, end_date: str = None, mfa_code: str = None) ->
     
     if not success:
         logger.error("Failed to fetch body battery data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch body battery data: {err}"
         }
 
@@ -232,7 +261,7 @@ def body_battery(start_date: str, end_date: str = None, mfa_code: str = None) ->
 
 
 @mcp.tool()
-def all_day_stress(date: str, mfa_code: str = None) -> dict:
+def all_day_stress(date: str, mfa_code: Optional[str] = None) -> dict:
     """Return all day stress data for specified date with MFA support.
 
     Args:
@@ -259,13 +288,13 @@ def all_day_stress(date: str, mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch stress data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch stress data: {err}"
         }
 
@@ -274,7 +303,7 @@ def all_day_stress(date: str, mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def sleep_data(date: str, mfa_code: str = None) -> dict:
+def sleep_data(date: str, mfa_code: Optional[str] = None) -> dict:
     """Return sleep data for specified date with MFA support.
 
     Args:
@@ -301,13 +330,13 @@ def sleep_data(date: str, mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch sleep data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch sleep data: {err}"
         }
 
@@ -316,7 +345,7 @@ def sleep_data(date: str, mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def hrv_data(date: str, mfa_code: str = None) -> dict:
+def hrv_data(date: str, mfa_code: Optional[str] = None) -> dict:
     """Return heart rate variability data for specified date with MFA support.
 
     Args:
@@ -343,13 +372,13 @@ def hrv_data(date: str, mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch HRV data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch HRV data: {err}"
         }
 
@@ -358,7 +387,7 @@ def hrv_data(date: str, mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def training_readiness(date: str, mfa_code: str = None) -> dict:
+def training_readiness(date: str, mfa_code: Optional[str] = None) -> dict:
     """Return training readiness data for specified date with MFA support.
 
     Args:
@@ -385,13 +414,13 @@ def training_readiness(date: str, mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch training readiness data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch training readiness data: {err}"
         }
 
@@ -400,7 +429,7 @@ def training_readiness(date: str, mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def training_status(date: str, mfa_code: str = None) -> dict:
+def training_status(date: str, mfa_code: Optional[str] = None) -> dict:
     """Return training status data for specified date with MFA support.
 
     Args:
@@ -427,13 +456,13 @@ def training_status(date: str, mfa_code: str = None) -> dict:
     
     if not success:
         logger.error("Failed to fetch training status data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch training status data: {err}"
         }
 
@@ -442,8 +471,8 @@ def training_status(date: str, mfa_code: str = None) -> dict:
 
 
 @mcp.tool()
-def activities(start_date: str, end_date: str = None, activity_type: str = None, 
-               sort_order: str = None, mfa_code: str = None) -> dict:
+def activities(start_date: str, end_date: Optional[str] = None, activity_type: Optional[str] = None, 
+               sort_order: Optional[str] = None, mfa_code: Optional[str] = None) -> dict:
     """Return activities for specified date range with MFA support.
 
     Args:
@@ -473,13 +502,13 @@ def activities(start_date: str, end_date: str = None, activity_type: str = None,
     
     if not success:
         logger.error("Failed to fetch activities data: %s", err)
-        if err and any(keyword in err.lower() for keyword in ['credential', 'auth', 'login', 'unauthorized', 'forbidden']):
+        if _is_auth_error(err):
             return {
-                "error": "auth_failed",
+                "error": ERROR_AUTH_FAILED,
                 "message": f"Authentication failed: {err}"
             }
         return {
-            "error": "fetch_failed", 
+            "error": ERROR_FETCH_FAILED, 
             "message": f"Failed to fetch activities data: {err}"
         }
 
@@ -488,7 +517,7 @@ def activities(start_date: str, end_date: str = None, activity_type: str = None,
 
 
 @mcp.tool()
-def workout_preferences(preferences_data: dict = None) -> dict:
+def workout_preferences(preferences_data: Optional[dict] = None) -> dict:
     """Get or set workout preferences.
     
     This tool manages user workout preferences stored in a local file. If preferences
@@ -521,12 +550,12 @@ def workout_preferences(preferences_data: dict = None) -> dict:
         if not success:
             logger.error("Failed to save workout preferences: %s", err)
             return {
-                "error": "save_failed",
+                "error": ERROR_SAVE_FAILED,
                 "message": f"Failed to save workout preferences: {err}"
             }
         logger.info("Successfully saved workout preferences")
         return {
-            "status": "saved",
+            "status": STATUS_SAVED,
             "message": "Workout preferences saved successfully",
             "data": preferences_data
         }
@@ -535,10 +564,10 @@ def workout_preferences(preferences_data: dict = None) -> dict:
     success, data, err = load_workout_preferences()
     
     if not success:
-        if err == "not_found":
+        if err == STATUS_NOT_FOUND:
             logger.info("No workout preferences found, prompting user")
             return {
-                "status": "not_found",
+                "status": STATUS_NOT_FOUND,
                 "message": "No workout preferences found. Please provide your preferences.",
                 "prompt": "Please provide your workout preferences including goals, frequency, preferred days, session duration, intensity level, and any restrictions.",
                 "example": {
@@ -553,19 +582,19 @@ def workout_preferences(preferences_data: dict = None) -> dict:
         else:
             logger.error("Failed to load workout preferences: %s", err)
             return {
-                "error": "load_failed",
+                "error": ERROR_LOAD_FAILED,
                 "message": f"Failed to load workout preferences: {err}"
             }
     
     logger.info("Successfully loaded workout preferences")
     return {
-        "status": "found",
+        "status": STATUS_FOUND,
         "data": data
     }
 
 
 @mcp.tool()
-def available_equipment(equipment_data: dict = None) -> dict:
+def available_equipment(equipment_data: Optional[dict] = None) -> dict:
     """Get or set available workout equipment.
     
     This tool manages user's available workout equipment stored in a local file. 
@@ -600,12 +629,12 @@ def available_equipment(equipment_data: dict = None) -> dict:
         if not success:
             logger.error("Failed to save available equipment: %s", err)
             return {
-                "error": "save_failed",
+                "error": ERROR_SAVE_FAILED,
                 "message": f"Failed to save available equipment: {err}"
             }
         logger.info("Successfully saved available equipment")
         return {
-            "status": "saved",
+            "status": STATUS_SAVED,
             "message": "Available equipment saved successfully",
             "data": equipment_data
         }
@@ -614,10 +643,10 @@ def available_equipment(equipment_data: dict = None) -> dict:
     success, data, err = load_available_equipment()
     
     if not success:
-        if err == "not_found":
+        if err == STATUS_NOT_FOUND:
             logger.info("No equipment data found, prompting user")
             return {
-                "status": "not_found",
+                "status": STATUS_NOT_FOUND,
                 "message": "No equipment data found. Please provide your available equipment.",
                 "prompt": "Please provide details about your available workout equipment including cardio machines, strength equipment, weights, accessories, and location.",
                 "example": {
@@ -634,13 +663,13 @@ def available_equipment(equipment_data: dict = None) -> dict:
         else:
             logger.error("Failed to load available equipment: %s", err)
             return {
-                "error": "load_failed",
+                "error": ERROR_LOAD_FAILED,
                 "message": f"Failed to load available equipment: {err}"
             }
     
     logger.info("Successfully loaded available equipment")
     return {
-        "status": "found",
+        "status": STATUS_FOUND,
         "data": data
     }
 
